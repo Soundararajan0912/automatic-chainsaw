@@ -867,3 +867,4 @@ docker exec -it kafka ping -c 3 postgres
 
 
 **Note:** Always ensure you understand the security implications of the default passwords and change them in production environments and don't mix the UI credentials with its DB credentials.
+For Openmetadata , if default db credentials should be changed, it should be updated in .env and in sql file 
