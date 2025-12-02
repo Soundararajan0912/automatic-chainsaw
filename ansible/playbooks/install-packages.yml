@@ -1,0 +1,65 @@
+---
+- name: Install nginx, Docker, and Docker Compose on all hosts
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    pkg_profile: "{{ package_matrix[ansible_distribution] | default(package_matrix[ansible_os_family] | default(package_matrix['default'])) }}"
+
+  tasks:
+    - name: Refresh apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: "{{ patch_preferences.apt.cache_valid_time }}"
+      when: pkg_profile.package_manager == 'apt'
+
+    - name: Refresh yum metadata
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        update_cache: true
+      when: pkg_profile.package_manager == 'yum'
+      register: yum_update_result
+      changed_when: false
+
+    - name: Refresh dnf metadata
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: true
+      when: pkg_profile.package_manager == 'dnf'
+      register: dnf_update_result
+      changed_when: false
+
+    - name: Install packages (apt)
+      ansible.builtin.apt:
+        name: "{{ pkg_profile.packages }}"
+        state: present
+      when: pkg_profile.package_manager == 'apt'
+
+    - name: Install packages (yum)
+      ansible.builtin.yum:
+        name: "{{ pkg_profile.packages }}"
+        state: present
+      when: pkg_profile.package_manager == 'yum'
+
+    - name: Install packages (dnf)
+      ansible.builtin.dnf:
+        name: "{{ pkg_profile.packages }}"
+        state: present
+      when: pkg_profile.package_manager == 'dnf'
+
+    - name: Install packages (generic fallback)
+      ansible.builtin.package:
+        name: "{{ pkg_profile.packages }}"
+        state: present
+      when: pkg_profile.package_manager == 'package'
+
+    - name: Ensure services are enabled and running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop: "{{ pkg_profile.services | default([]) }}"
+      when: (pkg_profile.services | default([])) | length > 0

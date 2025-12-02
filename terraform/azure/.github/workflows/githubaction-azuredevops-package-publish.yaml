@@ -1,0 +1,70 @@
+name: Github Action Azure Artifacts Package Deployment
+
+permissions:
+ contents: read
+ id-token: write
+ actions: read
+ 
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: 'Enter the Branch name'
+        required: true
+        default: 'main'
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: development
+        type: choice
+        options:
+          - development
+          - production
+env:
+  VERSION: $(date +'%Y-%m-%d-%H-%M')
+
+jobs:
+ build-push:
+  name:  Build, Push Artifact Package
+  runs-on: gha-azcapp
+  environment: ${{ github.event.inputs.environment }}
+  outputs:
+   image-digest: ${{ steps.build.outputs.digest }}
+   scan-results: ${{ steps.scan.outputs.results }}
+  steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
+    with:
+      ref: ${{ github.event.inputs.branch }}
+      repository: LTIM-Fosfor/gha-azcapp
+      fetch-depth: 1
+      submodules: false
+  - name: Azure Login
+    uses: azure/login@v2
+    with:
+      client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  # Step 2
+  - name: NPM Publish
+    env:
+      AZURE_DEVOPS_TOKEN: ${{ secrets.AZURE_ARTIFACT_PAT }}
+    run: |
+      cd my-node-package
+      sed -i "s|AZURE-DEVOPS-TOKEN|$AZURE_DEVOPS_TOKEN|" .npmrc
+      npm publish
+      npm pack my-node-package@1.0.0 --registry=https://pkgs.dev.azure.com/FDC-Devops-internal/FDC-Project/_packaging/gha-azcapp-py-feed/npm/registry/
+  - name: Configure twine authentication using the token
+    if: false
+    run: |
+      echo "[distutils]" > .pypirc
+      echo -e "Index-servers = \n  gha-azcapp-py-feed" >> .pypirc
+      echo "" >> .pypirc
+      echo "[gha-azcapp-py-feed]" >> .pypirc
+      echo "Repository = https://pkgs.dev.azure.com/FDC-Devops-internal/FDC-Project/_packaging/gha-azcapp-py-feed/pypi/upload/" >> .pypirc
+      echo "username = AzureDevops" >> .pypirc
+      echo "password = $AZURE_DEVOPS_TOKEN" >> .pypirc
+      cd samplepkg
+      python3 -m build
+      twine upload --config-file ../.pypirc -r gha-azcapp-py-feed dist/*
+      echo "Package Uploaded Successfully"

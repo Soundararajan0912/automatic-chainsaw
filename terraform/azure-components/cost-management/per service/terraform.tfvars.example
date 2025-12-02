@@ -1,0 +1,27 @@
+name            = "budget-compute-prod"
+subscription_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+service_names   = ["Microsoft.Compute/virtualMachines", "Microsoft.Storage/storageAccounts"]
+amount          = 8000
+time_grain      = "Monthly"
+
+time_period = {
+  start_date = "2025-01-01T00:00:00Z"
+  end_date   = "2025-12-31T00:00:00Z"
+}
+
+notifications = {
+  Actual75 = {
+    operator       = "GreaterThan"
+    threshold      = 75
+    threshold_type = "Actual"
+    contact_emails = ["compute-owner@example.com"]
+    enabled        = true
+  }
+  Forecast90 = {
+    operator       = "GreaterThan"
+    threshold      = 90
+    threshold_type = "Forecasted"
+    contact_emails = ["finops@example.com"]
+    enabled        = true
+  }
+}

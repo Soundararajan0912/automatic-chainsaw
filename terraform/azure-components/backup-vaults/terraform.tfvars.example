@@ -1,0 +1,17 @@
+name                = "bv-sample-eastus-001"
+location            = "eastus"
+resource_group_name = "rg-sample-eastus-001"
+datastore_type      = "VaultStore"
+redundancy          = "GeoRedundant"
+
+create_disk_policy              = true
+disk_backup_intervals           = ["R/2025-01-01T00:00:00+00:00/PT6H"]
+disk_default_retention_duration = "P7D"
+
+create_blob_policy      = true
+blob_retention_duration = "P30D"
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}

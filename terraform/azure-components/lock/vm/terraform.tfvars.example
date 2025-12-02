@@ -1,0 +1,4 @@
+name               = "lock-vm-prod"
+virtual_machine_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001/providers/Microsoft.Compute/virtualMachines/vm-sample-linux-001"
+lock_level         = "ReadOnly"
+notes              = "Prevent configuration drift on production VM"

@@ -1,0 +1,13 @@
+name                = "agw-sample-eastus-001"
+location            = "eastus"
+resource_group_name = "rg-sample-eastus-001"
+sku_name            = "Standard_v2"
+sku_tier            = "Standard_v2"
+capacity            = 2
+subnet_id           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001/providers/Microsoft.Network/virtualNetworks/vnet-sample-eastus-001/subnets/snet-appgw-001"
+backend_address_pool_name = "backend-pool"
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}

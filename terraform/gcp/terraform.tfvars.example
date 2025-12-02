@@ -1,0 +1,59 @@
+project_id = "my-gcp-project"
+region     = "us-central1"
+
+vpc_name    = "gke-private-vpc"
+subnet_name = "gke-private-subnet"
+subnet_cidr = "10.0.0.0/24"
+
+pods_secondary_range_name     = "gke-pods"
+pods_secondary_range_cidr     = "10.2.0.0/16"
+services_secondary_range_name = "gke-services"
+services_secondary_range_cidr = "10.3.0.0/20"
+
+cluster_name  = "private-gke-cluster"
+gke_version   = "1.29.4-gke.1043000"
+release_channel = "REGULAR"
+master_ipv4_cidr_block = "172.16.0.16/28"
+
+artifact_registry_location   = "us-central1"
+artifact_registry_repository = "tenant-images"
+
+cpu_node_pool = {
+  name         = "cpu-e2-pool"
+  machine_type = "e2-standard-4"
+  disk_size_gb = 100
+  disk_type    = "pd-ssd"
+  min_count    = 1
+  max_count    = 2
+  tags         = ["cpu"]
+  node_labels  = { pool = "cpu" }
+  taints       = []
+}
+
+gpu_node_pool = {
+  name              = "gpu-pool"
+  machine_type      = "n1-standard-8"
+  disk_size_gb      = 50
+  disk_type         = "pd-ssd"
+  min_count         = 1
+  max_count         = 2
+  accelerator_type  = "nvidia-tesla-t4"
+  accelerator_count = 1
+  tags              = ["gpu"]
+  node_labels       = { pool = "gpu" }
+  taints = [{
+    key    = "workload"
+    value  = "gpu"
+    effect = "NO_SCHEDULE"
+  }]
+}
+
+cloud_build_worker_pool = {
+  name           = "tenant-deploy-pool"
+  location       = "us-central1"
+  machine_type   = "e2-standard-4"
+  disk_size_gb   = 100
+  no_external_ip = true
+}
+
+# kubeconfig_path = "${path.module}/kubeconfig-private-gke.yaml"

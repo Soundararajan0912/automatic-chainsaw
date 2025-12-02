@@ -1,0 +1,13 @@
+name                 = "snet-sample-app-001"
+resource_group_name  = "rg-sample-eastus-001"
+virtual_network_name = "vnet-sample-eastus-001"
+address_prefixes     = ["10.10.1.0/24"]
+service_endpoints    = ["Microsoft.Storage"]
+
+delegations = [
+  {
+    name         = "aks-delegation"
+    service_name = "Microsoft.ContainerService/managedClusters"
+    actions      = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+  }
+]

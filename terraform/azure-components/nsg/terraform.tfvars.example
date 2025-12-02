@@ -1,0 +1,22 @@
+name                = "nsg-sample-web-001"
+location            = "eastus"
+resource_group_name = "rg-sample-eastus-001"
+
+security_rules = [
+  {
+    name                       = "AllowHTTPS"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "*"
+  }
+]
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}

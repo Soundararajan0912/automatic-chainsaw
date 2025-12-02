@@ -1,0 +1,248 @@
+name: terraform-ci
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_name:
+        description: "Branch to run against"
+        required: true
+        default: "main"
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: development
+        type: choice
+        options:
+          - development
+          - production
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+  security-events: write
+
+jobs:
+  validate-plan:
+    runs-on: ubuntu-latest
+    env:
+      TF_ROOT: .
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: true
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch_name || github.ref }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+          terraform_wrapper: false
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Ensure backend configuration exists
+        run: |
+          if [ ! -f "${{ env.TF_ROOT }}/backend.hcl" ]; then
+            echo "::error file=backend.hcl::backend.hcl is missing. Copy backend.hcl.example and fill in your remote state settings."
+            exit 1
+          fi
+
+      - name: Terraform fmt
+        run: terraform -chdir="${{ env.TF_ROOT }}" fmt -check
+
+      - name: Terraform init
+        run: terraform -chdir="${{ env.TF_ROOT }}" init -backend-config=backend.hcl
+
+      - name: Terraform validate
+        run: terraform -chdir="${{ env.TF_ROOT }}" validate
+
+      - name: Run tfsec scan
+        id: tfsec
+        continue-on-error: true
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          sarif_file: tfsec-results.sarif
+          working_directory: ${{ env.TF_ROOT }}
+
+      - name: Upload tfsec results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec-results.sarif
+
+      - name: Summarize tfsec findings for issue
+        id: tfsec_report
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          tf_root = os.environ.get('TF_ROOT', '.')
+          sarif_path = Path(tf_root) / 'tfsec-results.sarif'
+          body_path = Path('tfsec_issue_body.md')
+          flag_path = Path('tfsec_issue_flag.txt')
+
+          if not sarif_path.exists():
+              body_path.write_text('No tfsec report found.', encoding='utf-8')
+              flag_path.write_text('false', encoding='utf-8')
+          else:
+              data = json.loads(sarif_path.read_text(encoding='utf-8'))
+              runs = data.get('runs', [])
+              entries = []
+              severity_order = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO', 'UNKNOWN']
+
+              for run in runs:
+                  rules = {rule.get('id'): rule for rule in run.get('tool', {}).get('driver', {}).get('rules', [])}
+                  for result in run.get('results', []) or []:
+                      rule_id = result.get('ruleId', 'UNKNOWN')
+                      rule = rules.get(rule_id, {})
+                      props = result.get('properties', {})
+                      severity = (
+                          props.get('severity')
+                          or props.get('security-severity')
+                          or rule.get('properties', {}).get('problem.severity')
+                          or rule.get('properties', {}).get('security-severity')
+                          or result.get('level')
+                          or 'UNKNOWN'
+                      ).upper()
+                      if severity not in severity_order:
+                          severity = 'UNKNOWN'
+                      message = result.get('message', {}).get('text', '').strip() or 'No description provided.'
+                      locations = result.get('locations') or []
+                      if locations:
+                          loc = locations[0]
+                          physical = loc.get('physicalLocation', {})
+                          artifact = physical.get('artifactLocation', {}).get('uri', 'N/A')
+                          region = physical.get('region', {})
+                          start_line = region.get('startLine') or 'N/A'
+                          location = f"{artifact}:{start_line}"
+                      else:
+                          location = 'N/A'
+                      entries.append({
+                          'severity': severity,
+                          'id': rule_id,
+                          'message': message,
+                          'location': location,
+                      })
+
+              entries.sort(key=lambda item: (severity_order.index(item['severity']) if item['severity'] in severity_order else len(severity_order), item['id']))
+
+              if not entries:
+                  body = ["# tfsec Scan Report", "", "No vulnerabilities were reported in this run."]
+                  flag_path.write_text('false', encoding='utf-8')
+              else:
+                  body = ["# tfsec Scan Report", "", f"Total findings: {len(entries)}", ""]
+                  current_severity = None
+                  for entry in entries:
+                      if entry['severity'] != current_severity:
+                          current_severity = entry['severity']
+                          body.extend([f"## {current_severity}", "| Rule | Location | Details |", "| --- | --- | --- |"])
+                      body.append(f"| {entry['id']} | {entry['location']} | {entry['message'].replace('|', '\\|')} |")
+                  flag_path.write_text('true', encoding='utf-8')
+
+              body_path.write_text("\n".join(body) + "\n", encoding='utf-8')
+          PY
+
+          HAS_FINDINGS=$(cat tfsec_issue_flag.txt)
+          echo "has-findings=$HAS_FINDINGS" >> "$GITHUB_OUTPUT"
+          if [ "$HAS_FINDINGS" = "true" ]; then
+            {
+              echo 'body<<EOF'
+              cat tfsec_issue_body.md
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub issue for tfsec findings
+        if: steps.tfsec_report.outputs.has-findings == 'true'
+        uses: actions/github-script@v7
+        env:
+          ISSUE_BODY: ${{ steps.tfsec_report.outputs.body }}
+          ISSUE_LABEL: ${{ vars.TFSEC_ISSUE_LABEL != '' && vars.TFSEC_ISSUE_LABEL || 'tfsec' }}
+          TARGET_ENVIRONMENT: ${{ env.TARGET_ENVIRONMENT }}
+        with:
+          script: |
+            const body = process.env.ISSUE_BODY;
+            const label = process.env.ISSUE_LABEL;
+            const targetEnv = process.env.TARGET_ENVIRONMENT || 'production';
+            const shortSha = context.sha.substring(0, 7);
+            const title = `tfsec findings (${shortSha}) - ${targetEnv}`;
+            const labels = label ? [label, targetEnv] : [targetEnv];
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels,
+            });
+
+      - name: Fail if tfsec reported violations
+        if: steps.tfsec.outcome == 'failure'
+        run: |
+          echo "::error::tfsec reported policy violations. See generated issue for details."
+          exit 1
+
+      - name: Terraform plan
+        run: terraform -chdir="${{ env.TF_ROOT }}" plan -input=false -out=tfplan
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: ${{ env.TF_ROOT }}/tfplan
+
+  apply:
+    runs-on: ubuntu-latest
+    needs: validate-plan
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    environment: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }}
+    env:
+      TF_ROOT: .
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_IN_AUTOMATION: true
+      TARGET_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.environment || 'production' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch_name || github.ref }}
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: plan
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+          terraform_wrapper: false
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform init
+        run: terraform -chdir="${{ env.TF_ROOT }}" init -backend-config=backend.hcl
+
+      - name: Terraform apply
+        run: terraform -chdir="${{ env.TF_ROOT }}" apply -input=false plan/tfplan

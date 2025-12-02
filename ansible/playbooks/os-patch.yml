@@ -1,0 +1,53 @@
+---
+- name: Apply OS updates and security patches
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    patch_reboot_required: false
+
+  tasks:
+    - name: Update package cache (APT-based)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: "{{ patch_preferences.apt.cache_valid_time }}"
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Perform dist-upgrade on Debian/Ubuntu
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: true
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Apply updates with DNF (RHEL 8+/Amazon Linux 2023)
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: true
+      when: ansible_pkg_mgr == 'dnf'
+
+    - name: Apply updates with YUM (RHEL/CentOS 7)
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        update_cache: true
+      when: ansible_pkg_mgr == 'yum'
+
+    - name: Reboot required? check (APT)
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+      when: ansible_facts.os_family == 'Debian'
+
+    - name: Set reboot flag fact
+      ansible.builtin.set_fact:
+        patch_reboot_required: true
+      when:
+        - ansible_facts.os_family == 'Debian'
+        - reboot_required.stat.exists | default(false)
+
+    - name: Display patch summary
+      ansible.builtin.debug:
+        msg: >-
+          Patching complete on {{ inventory_hostname }}. Reboot required:
+          {{ patch_reboot_required | default(false) }}

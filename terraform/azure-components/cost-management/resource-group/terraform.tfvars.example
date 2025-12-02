@@ -1,0 +1,34 @@
+name              = "budget-rg-aks"
+resource_group_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-aks-prod"
+amount            = 5000
+time_grain        = "Monthly"
+
+time_period = {
+  start_date = "2025-01-01T00:00:00Z"
+  end_date   = "2025-12-31T00:00:00Z"
+}
+
+tag_filters = [
+  {
+    name     = "Environment"
+    operator = "In"
+    values   = ["Production"]
+  }
+]
+
+notifications = {
+  Actual80 = {
+    operator       = "GreaterThan"
+    threshold      = 80
+    threshold_type = "Actual"
+    contact_emails = ["owner@example.com"]
+    enabled        = true
+  }
+  Forecast90 = {
+    operator       = "GreaterThan"
+    threshold      = 90
+    threshold_type = "Forecasted"
+    contact_emails = ["finops@example.com"]
+    enabled        = true
+  }
+}

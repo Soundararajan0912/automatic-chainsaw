@@ -1,0 +1,4 @@
+name       = "lock-prevent-delete"
+scope      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001"
+lock_level = "CanNotDelete"
+notes      = "Protects the resource group"

@@ -1,0 +1,11 @@
+name                = "law-sample-eastus-001"
+location            = "eastus"
+resource_group_name = "rg-sample-eastus-001"
+sku                 = "PerGB2018"
+retention_in_days   = 60
+daily_quota_gb      = 5
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}

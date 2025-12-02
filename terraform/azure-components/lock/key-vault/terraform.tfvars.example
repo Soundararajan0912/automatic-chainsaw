@@ -1,0 +1,4 @@
+name         = "lock-keyvault-prod"
+key_vault_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001/providers/Microsoft.KeyVault/vaults/kv-sample-east-001"
+lock_level   = "CanNotDelete"
+notes        = "Protect production Key Vault"

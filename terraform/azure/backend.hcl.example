@@ -1,0 +1,5 @@
+resource_group_name  = "rg-tfstate-prod"
+storage_account_name = "statestoreprod001"
+container_name       = "tfstate"
+key                  = "azure/terraform.tfstate"
+use_azuread_auth    = true

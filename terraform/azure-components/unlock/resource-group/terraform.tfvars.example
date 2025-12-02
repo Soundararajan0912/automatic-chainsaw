@@ -1,0 +1,3 @@
+lock_name         = "lock-prevent-delete"
+resource_group_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001"
+force_reapply     = false

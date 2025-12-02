@@ -1,0 +1,17 @@
+name                 = "artifacts"
+storage_account_name = "stsampleeastus001"
+container_access_type = "private"
+
+metadata = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}
+
+default_encryption_scope          = null
+prevent_encryption_scope_override = false
+
+immutability_policy = {
+  state                                     = "Unlocked"
+  immutability_period_since_creation_in_days = 30
+  allow_protected_append_writes             = true
+}

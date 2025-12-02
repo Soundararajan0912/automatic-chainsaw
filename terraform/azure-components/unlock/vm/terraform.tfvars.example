@@ -1,0 +1,3 @@
+virtual_machine_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-shared/providers/Microsoft.Compute/virtualMachines/vm-prod"
+lock_name          = "lock-vm-prod"
+force_reapply      = false

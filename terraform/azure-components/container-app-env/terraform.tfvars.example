@@ -1,0 +1,10 @@
+name                       = "cae-sample-eastus-001"
+location                   = "eastus"
+resource_group_name        = "rg-sample-eastus-001"
+log_analytics_workspace_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001/providers/Microsoft.OperationalInsights/workspaces/law-sample-eastus-001"
+infrastructure_subnet_id   = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001/providers/Microsoft.Network/virtualNetworks/vnet-sample-eastus-001/subnets/snet-container-001"
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}

@@ -1,0 +1,26 @@
+name                = "vm-sample-linux-001"
+location            = "eastus"
+resource_group_name = "rg-sample-eastus-001"
+vm_size             = "Standard_D4s_v3"
+os_type             = "Linux"
+subnet_id           = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sample-eastus-001/providers/Microsoft.Network/virtualNetworks/vnet-sample-eastus-001/subnets/snet-vm-001"
+admin_username      = "azureuser"
+admin_password      = null
+ssh_public_key      = "ssh-rsa AAAAB3Nza..."
+os_disk_storage_account_type = "Premium_LRS"
+os_disk_size_gb     = 128
+
+source_image_reference = {
+  publisher = "Canonical"
+  offer     = "0001-com-ubuntu-server-jammy"
+  sku       = "22_04-lts-gen2"
+  version   = "latest"
+}
+
+identity_type = "SystemAssigned"
+identity_ids  = null
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}

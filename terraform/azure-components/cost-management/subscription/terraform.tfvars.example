@@ -1,0 +1,27 @@
+name            = "budget-subscription-prod"
+subscription_id = "/subscriptions/00000000-0000-0000-0000-000000000000"
+amount          = 25000
+time_grain      = "Monthly"
+
+time_period = {
+  start_date = "2025-01-01T00:00:00Z"
+  end_date   = "2025-12-31T00:00:00Z"
+}
+
+notifications = {
+  Forecast90 = {
+    operator       = "GreaterThan"
+    threshold      = 90
+    threshold_type = "Forecasted"
+    contact_emails = ["finops@example.com"]
+    enabled        = true
+  }
+  Actual100 = {
+    operator       = "GreaterThan"
+    threshold      = 100
+    threshold_type = "Actual"
+    contact_emails = ["cloudops@example.com"]
+    contact_roles  = ["Owner"]
+    enabled        = true
+  }
+}

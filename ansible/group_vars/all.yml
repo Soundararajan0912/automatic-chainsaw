@@ -1,0 +1,67 @@
+package_matrix:
+  Ubuntu:
+    package_manager: apt
+    packages:
+      - nginx
+      - docker.io
+      - docker-compose-plugin
+    services:
+      - nginx
+      - docker
+  Debian:
+    package_manager: apt
+    packages:
+      - nginx
+      - docker.io
+      - docker-compose-plugin
+    services:
+      - nginx
+      - docker
+  Amazon:
+    package_manager: dnf
+    packages:
+      - nginx
+      - docker
+      - docker-compose-plugin
+    services:
+      - nginx
+      - docker
+  CentOS:
+    package_manager: yum
+    packages:
+      - nginx
+      - docker
+      - docker-compose
+    services:
+      - nginx
+      - docker
+  RedHat:
+    package_manager: dnf
+    packages:
+      - nginx
+      - docker
+      - docker-compose
+    services:
+      - nginx
+      - docker
+  default:
+    package_manager: package
+    packages:
+      - nginx
+      - docker
+      - docker-compose
+    services:
+      - nginx
+      - docker
+
+patch_preferences:
+  apt:
+    cache_valid_time: 3600
+  yum:
+    security_only: false
+  dnf:
+    security_only: false
+
+reboot_defaults:
+  reboot_timeout: 900
+  post_reboot_delay: 300

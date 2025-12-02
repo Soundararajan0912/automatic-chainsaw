@@ -1,0 +1,48 @@
+---
+- name: Reboot servers and verify uptime change
+  hosts: all
+  become: true
+  gather_facts: false
+
+  vars:
+    reboot_timeout_seconds: "{{ reboot_defaults.reboot_timeout | default(900) }}"
+    post_reboot_delay_seconds: "{{ reboot_defaults.post_reboot_delay | default(300) }}"
+
+  tasks:
+    - name: Gather pre-reboot facts
+      ansible.builtin.setup:
+        gather_subset:
+          - min
+      register: pre_reboot_facts
+
+    - name: Capture boot time before reboot
+      ansible.builtin.command: uptime -s
+      register: pre_boot_time
+
+    - name: Reboot host and wait for it to return
+      ansible.builtin.reboot:
+        reboot_timeout: "{{ reboot_timeout_seconds }}"
+        post_reboot_delay: "{{ post_reboot_delay_seconds }}"
+        msg: "Reboot initiated by Ansible for maintenance"
+      register: reboot_result
+
+    - name: Gather post-reboot facts
+      ansible.builtin.setup:
+        gather_subset:
+          - min
+
+    - name: Capture boot time after reboot
+      ansible.builtin.command: uptime -s
+      register: post_boot_time
+
+    - name: Confirm reboot occurred
+      ansible.builtin.assert:
+        that:
+          - pre_boot_time.stdout != post_boot_time.stdout
+        fail_msg: "Reboot did not appear to occur on {{ inventory_hostname }}"
+        success_msg: "Reboot verified on {{ inventory_hostname }}"
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} rebooted in {{ reboot_result.elapsed | default('n/a') }} seconds.

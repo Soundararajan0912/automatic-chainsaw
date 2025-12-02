@@ -1,0 +1,70 @@
+subscription_id     = ""
+resource_group_name = "soundar-rnd-02"
+location            = "eastus"
+vnet_address_space  = "10.0.0.0/24"
+
+subnet_prefixes = {
+  AppGatewaySubnet       = "10.0.0.96/27"
+  VMSubnet               = "10.0.0.0/28"
+  ContainerAppsSubnet    = "10.0.0.128/25"
+  PrivateEndpointsSubnet = "10.0.0.16/28"
+  FutureBufferSubnet     = "10.0.0.64/27"
+}
+
+nat_subnet_names = [
+  "AppGatewaySubnet",
+  "ContainerAppsSubnet",
+  "VMSubnet",
+  "PrivateEndpointsSubnet",
+  "FutureBufferSubnet"
+]
+
+vm_subnet_name     = "VMSubnet"
+vm_size            = "Standard_D2s_v3"
+vm_os_disk_size_gb = 130
+vm_encryption_at_host_enabled = true
+assign_vm_identity_key_vault_access = true
+vm_key_vault_role_definition_name   = "Key Vault Administrator"
+admin_username     = "soundar-rnd-02"
+admin_password     = "ChangeM31024!"
+computer_name      = "soundarvm"
+custom_image_id    = ""
+nginx_server_name  = "dev.example.com"
+key_vault_name     = "soundar-kv-dev"
+key_vault_sku_name = "standard"
+key_vault_default_action = "Deny"
+key_vault_allowed_ip_rules = ["203.0.113.4/32"]
+app_gateway_name   = "soundar-appgw-02"
+app_gateway_subnet_name = "AppGatewaySubnet"
+app_gateway_capacity    = 1
+
+log_analytics_workspace_name         = "soundar-law-dev"
+log_analytics_workspace_sku          = "PerGB2018"
+log_analytics_workspace_retention_days = 30
+data_collection_rule_name            = "soundar-vm-dcr"
+azure_monitor_agent_extension_name   = "soundar-ama-ext"
+dependency_agent_extension_name      = "soundar-dependency-ext"
+enable_dependency_agent_extension    = false
+vm_backup_vault_name                 = "soundar-backup-vault"
+vm_backup_policy_name                = "soundar-vm-daily"
+vm_backup_daily_time                 = "22:00"
+vm_backup_retention_days             = 7
+vm_delete_lock_name                  = "soundarvm-delete-lock"
+storage_account_delete_lock_name     = "storage-delete-lock"
+acr_delete_lock_name                 = "acr-delete-lock"
+app_gateway_delete_lock_name         = "appgw-delete-lock"
+key_vault_data_plane_assignee_object_id = ""
+key_vault_data_plane_role_definition_name = "Key Vault Administrator"
+key_vault_data_plane_principal_type      = "User"
+storage_account_name                    = "soundarstorageacct"
+storage_account_tier                    = "Standard"
+storage_account_replication_type        = "LRS"
+storage_account_container_name          = "app-backups"
+acr_name                                = "soundaracrdev"
+acr_sku                                 = "Premium"
+acr_retention_days                      = 7
+
+tags = {
+  env  = "dev"
+  owner = "soundar-02"
+}

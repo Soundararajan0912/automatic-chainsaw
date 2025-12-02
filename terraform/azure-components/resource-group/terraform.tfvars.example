@@ -1,0 +1,8 @@
+name     = "rg-sample-eastus-001"
+location = "eastus"
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+  CostCenter  = "IT"
+}

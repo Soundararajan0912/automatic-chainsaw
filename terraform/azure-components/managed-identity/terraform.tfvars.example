@@ -1,0 +1,8 @@
+name                = "mi-sample-app-001"
+location            = "eastus"
+resource_group_name = "rg-sample-eastus-001"
+
+tags = {
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}
