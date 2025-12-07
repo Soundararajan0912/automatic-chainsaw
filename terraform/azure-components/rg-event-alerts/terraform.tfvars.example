@@ -1,0 +1,18 @@
+resource_group_name       = "rg-shared-infra"
+action_group_name        = "rg-shared-alerts"
+action_group_short_name  = "rgalerts"
+action_email_receivers   = ["platform-alerts@example.com"]
+webhook_receivers        = []
+
+alert_name        = "rg-shared-activity"
+alert_description = "Notifies the platform team whenever resources in rg-shared-infra change."
+alert_severity    = "Sev3"
+alert_enabled     = true
+
+event_category = "Administrative"
+event_levels   = ["Critical", "Error", "Warning", "Informational", "Verbose"]
+
+tags = {
+  environment = "shared"
+  owner       = "platform"
+}
