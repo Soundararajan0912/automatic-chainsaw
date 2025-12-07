@@ -1,0 +1,53 @@
+name: docker-cache-build-hosted
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Git ref (branch or tag) to build"
+        required: true
+        default: main
+      build_context:
+        description: "Build context path"
+        required: true
+        default: .
+      dockerfile:
+        description: "Dockerfile path"
+        required: true
+        default: ./Dockerfile
+      platform:
+        description: "Target platform"
+        required: true
+        default: linux/amd64
+
+env:
+  BUILD_CONTEXT: ${{ github.event.inputs.build_context || '.' }}
+  DOCKERFILE: ${{ github.event.inputs.dockerfile || './Dockerfile' }}
+  TARGET_PLATFORM: ${{ github.event.inputs.platform || 'linux/amd64' }}
+  CACHE_SCOPE: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image with cache
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE }}
+          platforms: ${{ env.TARGET_PLATFORM }}
+          push: false
+          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
+          cache-to: type=gha,mode=max,scope=${{ env.CACHE_SCOPE }}
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
